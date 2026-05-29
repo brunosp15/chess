@@ -11,529 +11,388 @@
 #define ANSI_RESET "\033[0m"
 
 typedef enum {
-  empty,
-  rook,
-  knight,
-  bishop,
-  queen,
-  king,
-  pawn,
+    rook,
+    knight,
+    bishop,
+    queen,
+    king,
+    pawn,
 
 } PieceType;
 
 typedef enum {
-  downRight,
-  downLeft,
-  upRight,
-  upLeft,
-  up,
-  down,
-  left,
-  right
+    downRight,
+    downLeft,
+    upRight,
+    upLeft,
+    up,
+    down,
+    left,
+    right,
+    nope,
 } Direction;
 
 typedef enum {
-  white,
-  black,
+    white,
+    black,
 } PieceColor;
 
 typedef struct {
-  PieceColor color;
-  PieceType type;
-  Texture2D texture;
-  Vector2 pos;
-  Vector2 target;
-  char *asset;
-  Vector2 originalPos;
-  bool isMoving;
-  Direction direction;
+    PieceColor color;
+    PieceType type;
+    Texture2D texture;
+    Vector2 pos;
+    Vector2 target;
+    char *asset;
+    bool isMoving;
+    Direction direction;
 
 } Piece;
 
-Piece BOARD[8][8];
-bool PATH_BOARD[8][8];
-int FIELD_SIZE = 80;
+typedef struct {
+    int x;
+    int y;
+} IVector2;
 
-Piece *selected;
+int FIELD_SIZE = 80;
+Piece *selectedPiece;
 
 bool isComputingClick = false;
 char *errorMessage;
 char *helpMessage;
 
-Piece w_rook1 = {.color = white, .type = rook, .asset = "assets/w-rook.png"};
-Piece w_knight1 = {
-    .color = white, .type = knight, .asset = "assets/w-knight.png"};
-Piece w_bishop1 = {
-    .color = white, .type = bishop, .asset = "assets/w-bishop.png"};
-Piece w_king = {.color = white, .type = king, .asset = "assets/w-king.png"};
-Piece w_queen = {.color = white, .type = queen, .asset = "assets/w-queen.png"};
-Piece w_knight2 = {
-    .color = white, .type = knight, .asset = "assets/w-knight.png"};
-Piece w_bishop2 = {
-    .color = white, .type = bishop, .asset = "assets/w-bishop.png"};
-Piece w_rook2 = {.color = white, .type = rook, .asset = "assets/w-rook.png"};
+Piece w_rook1 = {.color = white, .type = rook, .asset = "assets/w-rook.png", .pos = (Vector2){0, 7}};
+Piece w_knight1 = {.color = white, .type = knight, .asset = "assets/w-knight.png", .pos = (Vector2){1, 7}};
+Piece w_bishop1 = {.color = white, .type = bishop, .asset = "assets/w-bishop.png", .pos = (Vector2){2, 7}};
+Piece w_king = {.color = white, .type = king, .asset = "assets/w-king.png", .pos = (Vector2){3, 7}};
+Piece w_queen = {.color = white, .type = queen, .asset = "assets/w-queen.png", .pos = (Vector2){4, 7}};
+Piece w_knight2 = {.color = white, .type = knight, .asset = "assets/w-knight.png", .pos = (Vector2){5, 7}};
+Piece w_bishop2 = {.color = white, .type = bishop, .asset = "assets/w-bishop.png", .pos = (Vector2){6, 7}};
+Piece w_rook2 = {.color = white, .type = rook, .asset = "assets/w-rook.png", .pos = (Vector2){7, 7}};
 
-Piece w_pawn1 = {.color = white, .type = pawn, .asset = "assets/w-pawn.png"};
-Piece w_pawn2 = {.color = white, .type = pawn, .asset = "assets/w-pawn.png"};
-Piece w_pawn3 = {.color = white, .type = pawn, .asset = "assets/w-pawn.png"};
-Piece w_pawn4 = {.color = white, .type = pawn, .asset = "assets/w-pawn.png"};
-Piece w_pawn5 = {.color = white, .type = pawn, .asset = "assets/w-pawn.png"};
-Piece w_pawn6 = {.color = white, .type = pawn, .asset = "assets/w-pawn.png"};
-Piece w_pawn7 = {.color = white, .type = pawn, .asset = "assets/w-pawn.png"};
-Piece w_pawn8 = {.color = white, .type = pawn, .asset = "assets/w-pawn.png"};
+Piece w_pawn1 = {.color = white, .type = pawn, .asset = "assets/w-pawn.png", .pos = (Vector2){0, 6}};
+Piece w_pawn2 = {.color = white, .type = pawn, .asset = "assets/w-pawn.png", .pos = (Vector2){1, 6}};
+Piece w_pawn3 = {.color = white, .type = pawn, .asset = "assets/w-pawn.png", .pos = (Vector2){2, 6}};
+Piece w_pawn4 = {.color = white, .type = pawn, .asset = "assets/w-pawn.png", .pos = (Vector2){3, 6}};
+Piece w_pawn5 = {.color = white, .type = pawn, .asset = "assets/w-pawn.png", .pos = (Vector2){4, 6}};
+Piece w_pawn6 = {.color = white, .type = pawn, .asset = "assets/w-pawn.png", .pos = (Vector2){5, 6}};
+Piece w_pawn7 = {.color = white, .type = pawn, .asset = "assets/w-pawn.png", .pos = (Vector2){6, 6}};
+Piece w_pawn8 = {.color = white, .type = pawn, .asset = "assets/w-pawn.png", .pos = (Vector2){7, 6}};
 
-Piece b_rook1 = {.color = black, .type = rook, .asset = "assets/b-rook.png"};
-Piece b_knight1 = {
-    .color = black, .type = knight, .asset = "assets/b-knight.png"};
-Piece b_bishop1 = {
-    .color = black, .type = bishop, .asset = "assets/b-bishop.png"};
-Piece b_king = {.color = black, .type = king, .asset = "assets/b-king.png"};
-Piece b_queen = {.color = black, .type = queen, .asset = "assets/b-queen.png"};
-Piece b_knight2 = {
-    .color = black, .type = knight, .asset = "assets/b-knight.png"};
-Piece b_bishop2 = {
-    .color = black, .type = bishop, .asset = "assets/b-bishop.png"};
-Piece b_rook2 = {.color = black, .type = rook, .asset = "assets/b-rook.png"};
+Piece b_rook1 = {.color = black, .type = rook, .asset = "assets/b-rook.png", .pos = (Vector2){0, 0}};
+Piece b_knight1 = {.color = black, .type = knight, .asset = "assets/b-knight.png", .pos = (Vector2){1, 0}};
+Piece b_bishop1 = {.color = black, .type = bishop, .asset = "assets/b-bishop.png", .pos = (Vector2){2, 0}};
+Piece b_king = {.color = black, .type = king, .asset = "assets/b-king.png", .pos = (Vector2){3, 0}};
+Piece b_queen = {.color = black, .type = queen, .asset = "assets/b-queen.png", .pos = (Vector2){4, 0}};
+Piece b_knight2 = {.color = black, .type = knight, .asset = "assets/b-knight.png", .pos = (Vector2){5, 0}};
+Piece b_bishop2 = {.color = black, .type = bishop, .asset = "assets/b-bishop.png", .pos = (Vector2){6, 0}};
+Piece b_rook2 = {.color = black, .type = rook, .asset = "assets/b-rook.png", .pos = (Vector2){7, 0}};
 
-Piece b_pawn1 = {.color = black, .type = pawn, .asset = "assets/b-pawn.png"};
-Piece b_pawn2 = {.color = black, .type = pawn, .asset = "assets/b-pawn.png"};
-Piece b_pawn3 = {.color = black, .type = pawn, .asset = "assets/b-pawn.png"};
-Piece b_pawn4 = {.color = black, .type = pawn, .asset = "assets/b-pawn.png"};
-Piece b_pawn5 = {.color = black, .type = pawn, .asset = "assets/b-pawn.png"};
-Piece b_pawn6 = {.color = black, .type = pawn, .asset = "assets/b-pawn.png"};
-Piece b_pawn7 = {.color = black, .type = pawn, .asset = "assets/b-pawn.png"};
-Piece b_pawn8 = {.color = black, .type = pawn, .asset = "assets/b-pawn.png"};
+Piece b_pawn1 = {.color = black, .type = pawn, .asset = "assets/b-pawn.png", .pos = (Vector2){0, 1}};
+Piece b_pawn2 = {.color = black, .type = pawn, .asset = "assets/b-pawn.png", .pos = (Vector2){1, 1}};
+Piece b_pawn3 = {.color = black, .type = pawn, .asset = "assets/b-pawn.png", .pos = (Vector2){2, 1}};
+Piece b_pawn4 = {.color = black, .type = pawn, .asset = "assets/b-pawn.png", .pos = (Vector2){3, 1}};
+Piece b_pawn5 = {.color = black, .type = pawn, .asset = "assets/b-pawn.png", .pos = (Vector2){4, 1}};
+Piece b_pawn6 = {.color = black, .type = pawn, .asset = "assets/b-pawn.png", .pos = (Vector2){5, 1}};
+Piece b_pawn7 = {.color = black, .type = pawn, .asset = "assets/b-pawn.png", .pos = (Vector2){6, 1}};
+Piece b_pawn8 = {.color = black, .type = pawn, .asset = "assets/b-pawn.png", .pos = (Vector2){7, 1}};
 
-Piece emptyPiece = {.type = empty};
+Piece *piecesList[32];
 
-Piece *getPieceFromBoard(Vector2 pos) {
-  Piece *piece = &BOARD[(int)pos.x][(int)pos.y];
-  // piece.pos = pos;
-  return piece;
+IVector2 convert(Vector2 vector) { return (IVector2){(int)(vector.x / FIELD_SIZE), (int)(vector.y / FIELD_SIZE)}; }
+
+Piece *getPieceFromPosition(Vector2 pos) {
+    for (int i = 0; i < 32; i++) {
+        Piece *piece = piecesList[i];
+        IVector2 ipos = convert(pos);
+        IVector2 piecePos = convert(piece->pos);
+
+        if (piecePos.x == ipos.x && piecePos.y == ipos.y) {
+            return piece;
+        }
+    }
+    return NULL;
 }
 
 void fillEmptyBoard() {
-  printf(ANSI_GREEN "Initalizing board\n" ANSI_RESET);
-  BOARD[0][0] = b_rook1;
-  BOARD[1][0] = b_knight1;
-  BOARD[2][0] = b_bishop1;
-  BOARD[3][0] = b_king;
-  BOARD[4][0] = b_queen;
-  BOARD[5][0] = b_bishop2;
-  BOARD[6][0] = b_knight2;
-  BOARD[7][0] = b_rook2;
+    printf(ANSI_GREEN "Initalizing "
+                      "board\n" ANSI_RESET);
+    piecesList[0] = &b_rook1;
+    piecesList[1] = &b_knight1;
+    piecesList[2] = &b_bishop1;
+    piecesList[3] = &b_king;
+    piecesList[4] = &b_queen;
+    piecesList[5] = &b_bishop2;
+    piecesList[6] = &b_knight2;
+    piecesList[7] = &b_rook2;
+    piecesList[8] = &b_pawn1;
+    piecesList[9] = &b_pawn2;
+    piecesList[10] = &b_pawn3;
+    piecesList[11] = &b_pawn4;
+    piecesList[12] = &b_pawn5;
+    piecesList[13] = &b_pawn6;
+    piecesList[14] = &b_pawn7;
+    piecesList[15] = &b_pawn8;
+    piecesList[16] = &w_pawn1;
+    piecesList[17] = &w_pawn2;
+    piecesList[18] = &w_pawn3;
+    piecesList[19] = &w_pawn4;
+    piecesList[20] = &w_pawn5;
+    piecesList[21] = &w_pawn6;
+    piecesList[22] = &w_pawn7;
+    piecesList[23] = &w_pawn8;
+    piecesList[24] = &w_rook1;
+    piecesList[25] = &w_knight1;
+    piecesList[26] = &w_bishop1;
+    piecesList[27] = &w_queen;
+    piecesList[28] = &w_king;
+    piecesList[29] = &w_bishop2;
+    piecesList[30] = &w_knight2;
+    piecesList[31] = &w_rook2;
 
-  BOARD[0][1] = b_pawn1;
-  BOARD[1][1] = b_pawn2;
-  BOARD[2][1] = b_pawn3;
-  BOARD[3][1] = b_pawn4;
-  BOARD[4][1] = b_pawn5;
-  BOARD[5][1] = b_pawn6;
-  BOARD[6][1] = b_pawn7;
-  BOARD[7][1] = b_pawn8;
-
-  BOARD[0][6] = w_pawn1;
-  BOARD[1][6] = w_pawn2;
-  BOARD[2][6] = w_pawn3;
-  BOARD[3][6] = w_pawn4;
-  BOARD[4][6] = w_pawn5;
-  BOARD[5][6] = w_pawn6;
-  BOARD[6][6] = w_pawn7;
-  BOARD[7][6] = w_pawn8;
-
-  BOARD[0][7] = w_rook1;
-  BOARD[1][7] = w_knight1;
-  BOARD[2][7] = w_bishop1;
-  BOARD[3][7] = w_queen;
-  BOARD[4][7] = w_king;
-  BOARD[5][7] = w_bishop2;
-  BOARD[6][7] = w_knight2;
-  BOARD[7][7] = w_rook2;
-
-  for (int x = 0; x < 8; x++) {
-    for (int y = 0; y < 8; y++) {
-      Piece *piece = &BOARD[x][y];
-      piece->pos = (Vector2){.x = x * FIELD_SIZE, .y = y * FIELD_SIZE};
-      piece->texture = LoadTexture(piece->asset);
+    for (int i = 0; i < 32; i++) {
+        Piece *piece = piecesList[i];
+        piece->texture = LoadTexture(piece->asset);
+        piece->pos.x *= FIELD_SIZE;
+        piece->pos.y *= FIELD_SIZE;
+        printf(ANSI_BLUE "Initialized position x:%f y:%f\n" ANSI_RESET, piece->pos.x, piece->pos.y);
     }
-  }
-  printf(ANSI_GREEN "======= Initialization finished \n" ANSI_RESET);
+    printf(ANSI_GREEN "======= Initialization finished \n" ANSI_RESET);
 }
 
-void startPieceAnimation(Direction direction) {
-  selected->originalPos = selected->pos;
-  selected->isMoving = true;
-  selected->direction = direction;
-  printf(ANSI_RED "Original position %f %f\n" ANSI_RESET,
-         selected->originalPos.x, selected->originalPos.y);
+void DrawBoard() {
+    for (int x = 0; x < 8; x++) {
+        for (int y = 0; y < 8; y++) {
+            int position_x = x * FIELD_SIZE;
+            int position_y = y * FIELD_SIZE;
+            char houseNumber[50] = "";
+            sprintf(houseNumber, "x:%d y:%d", x, y);
+
+            DrawRectangle(position_x, position_y, FIELD_SIZE, FIELD_SIZE, (x + y) % 2 == 0 ? WHITE : DARKGRAY);
+
+            DrawText(houseNumber, position_x, position_y, 16, BLUE);
+        }
+    }
 }
 
-void movePawn(Piece *piece) {
-  Piece *pieceOnTarget = getPieceFromBoard(piece->target);
-  if (piece->color == white) {
-    printf("white pawn moving from: %f to: %f\n", piece->pos.y / FIELD_SIZE,
-           piece->target.y);
-    if (selected->pos.y / FIELD_SIZE - selected->target.y == 1 &&
-        selected->pos.x / FIELD_SIZE == selected->target.x) {
-      if (pieceOnTarget->type == empty) {
-        startPieceAnimation(up);
-        return;
-      }
+void computePieceAnimation(Piece *piece) {
+    IVector2 pos = convert(piece->pos);
+    IVector2 target = convert(piece->target);
+    if (pos.x == target.x && pos.y == target.y) {
+        piece->isMoving = false;
+        piece->pos = (Vector2){target.x * FIELD_SIZE, target.y * FIELD_SIZE};
+    } else if (piece->isMoving) {
+        switch (piece->direction) {
+        case downRight:
+            piece->pos.x += 2;
+            piece->pos.y += 2;
+            break;
+        case downLeft:
+            piece->pos.x -= 2;
+            piece->pos.y += 2;
+            break;
+        case upRight:
+            piece->pos.x += 2;
+            piece->pos.y -= 2;
+            break;
+        case upLeft:
+            piece->pos.x -= 2;
+            piece->pos.y -= 2;
+            break;
+        case up:
+            piece->pos.x += 0;
+            piece->pos.y -= 2;
+            break;
+        case down:
+            piece->pos.x += 0;
+            piece->pos.y += 2;
+            break;
+        case left:
+            piece->pos.x -= 2;
+            piece->pos.y += 0;
+            break;
+        case right:
+            piece->pos.x += 2;
+            piece->pos.y += 0;
+            break;
+        }
     }
-
-    bool hasBlackPieceOnTarget =
-        pieceOnTarget->color == black && pieceOnTarget->type != empty;
-    if (hasBlackPieceOnTarget) {
-      if (selected->pos.x / FIELD_SIZE - selected->target.x == 1) {
-        startPieceAnimation(upLeft);
-        return;
-      } else if (selected->pos.x / FIELD_SIZE - selected->target.x == -1) {
-        startPieceAnimation(upRight);
-        return;
-      }
-    }
-  } else {
-    printf("black pawn moving\n");
-
-    if (selected->target.y - selected->pos.y / FIELD_SIZE == 1 &&
-        selected->pos.x / FIELD_SIZE == selected->target.x) {
-      if (getPieceFromBoard(piece->target)->type == empty) {
-        startPieceAnimation(down);
-        return;
-      }
-    }
-
-    if (pieceOnTarget->color == white && pieceOnTarget->type != empty) {
-      if (selected->pos.x / FIELD_SIZE - selected->target.x == 1) {
-        startPieceAnimation(downLeft);
-        return;
-      } else if (selected->pos.x / FIELD_SIZE - selected->target.x == -1) {
-        startPieceAnimation(downRight);
-        return;
-      }
-    }
-  }
-
-  errorMessage = "Invalid movement";
 }
-char *getBishopErrorMessage(Piece piece, int x, int y) {
 
-  printf(ANSI_RED "%d %d\n" ANSI_RESET, x, y);
-  Piece pieceOnTheWay = BOARD[x][y];
-  if (pieceOnTheWay.type != empty && pieceOnTheWay.color == piece.color) {
-    return "Same color piece on the way";
-  } else if (pieceOnTheWay.type != empty &&
-             pieceOnTheWay.color != piece.color && x != selected->target.x) {
-    return "Oposite color piece on the way";
-  }
-
-  return NULL;
+void DrawPiece(Piece *piece) {
+    if (selectedPiece != NULL && selectedPiece == piece && !selectedPiece->isMoving) {
+        DrawRectangle(piece->pos.x, piece->pos.y, FIELD_SIZE, FIELD_SIZE, GREEN);
+    }
+    DrawTexturePro(piece->texture,
+                   (Rectangle){
+                       0,
+                       0,
+                       piece->texture.width,
+                       piece->texture.height,
+                   },
+                   (Rectangle){
+                       piece->pos.x,
+                       piece->pos.y,
+                       FIELD_SIZE,
+                       FIELD_SIZE,
+                   },
+                   (Vector2){1, 1},
+                   0,
+                   WHITE);
+    // IVector2 oi = convert(piece->pos);
+    // char houseNumber[50] = "";
+    // sprintf(houseNumber, "x:%d y:%d", oi.x, oi.y);
+    // DrawText(houseNumber, piece->pos.x, piece->pos.y + 40, 20, RED);
+    computePieceAnimation(piece);
 }
-void moveBishop(Piece piece) {
-  if (fabsf(selected->target.x - selected->pos.x / FIELD_SIZE) !=
-      fabsf(selected->target.y - selected->pos.y / FIELD_SIZE)) {
-    errorMessage = "invalid movement";
-    return;
-  }
 
-  Direction direction = downRight;
+Direction getDirection(Vector2 pos, Vector2 target) {
+    IVector2 iPos = convert(pos);
+    IVector2 iTarget = convert(target);
+    int x = iTarget.x - iPos.x;
+    int y = iTarget.y - iPos.y;
+    bool isSimetrical = abs(x) - abs(y) == 0;
 
-  if (selected->target.y < selected->pos.y / FIELD_SIZE) {
-    if (selected->target.x < selected->pos.x / FIELD_SIZE) {
-      direction = upLeft;
+    if (x == 0) {
+        if (y > 0) {
+            return down;
+        } else {
+            return up;
+        }
+    } else if (x > 0) {
+        if (y < 0 && isSimetrical)
+            return upRight;
+
+        if (y == 0)
+            return right;
+
+        if (y > 0 && isSimetrical)
+            return downRight;
+
     } else {
-      direction = upRight;
-    }
-  } else {
-    if (selected->target.x < selected->pos.x / FIELD_SIZE) {
-      direction = downLeft;
-    } else {
-      direction = downRight;
-    }
-  }
+        if (y == 0)
+            return left;
 
-  if (direction == upLeft) {
-    bool reachBoardLimit = false;
-    int n = 1;
-    while (!reachBoardLimit) {
-      int scanningY = selected->pos.y / FIELD_SIZE - n;
-      int scanningX = selected->pos.x / FIELD_SIZE - n;
-      if (scanningX < 0 || scanningY < 0 || scanningY < selected->target.y) {
-        reachBoardLimit = true;
-      } else {
-        char *result = getBishopErrorMessage(piece, scanningX, scanningY);
-        if (result == NULL) {
-          n++;
-        } else {
-          errorMessage = result;
-          return;
-        }
-      }
-    }
-    startPieceAnimation(direction);
-  } else if (direction == upRight) {
-    bool reachBoardLimit = false;
-    int n = 1;
-    while (!reachBoardLimit) {
-      int scanningY = selected->pos.y / FIELD_SIZE - n;
-      int scanningX = selected->pos.x / FIELD_SIZE + n;
-      if (scanningX > 7 || scanningY < 0 || scanningY < selected->target.y) {
-        reachBoardLimit = true;
-      } else {
-        char *result = getBishopErrorMessage(piece, scanningX, scanningY);
-        if (result == NULL) {
-          n++;
-        } else {
-          errorMessage = result;
-          return;
-        }
-      }
-    }
-    startPieceAnimation(direction);
-  } else if (direction == downRight) {
-    bool reachBoardLimit = false;
-    int n = 1;
-    while (!reachBoardLimit) {
-      int scanningY = selected->pos.y / FIELD_SIZE + n;
-      int scanningX = selected->pos.x / FIELD_SIZE + n;
-      if (scanningX > 7 || scanningY > 7 || scanningY > selected->target.y) {
-        reachBoardLimit = true;
-      } else {
-        char *result = getBishopErrorMessage(piece, scanningX, scanningY);
-        if (result == NULL) {
-          n++;
-        } else {
-          errorMessage = result;
-          return;
-        }
-      }
-    }
-    startPieceAnimation(direction);
+        if (y > 0 && isSimetrical)
+            return downLeft;
 
-  } else if (direction == downLeft) {
-    bool reachBoardLimit = false;
-    int n = 1;
-    while (!reachBoardLimit) {
-      int scanningY = selected->pos.y / FIELD_SIZE + n;
-      int scanningX = selected->pos.x / FIELD_SIZE - n;
-      if (scanningX < 0 || scanningY > 7 ||
-          scanningY < (selected->target.y - 1)) {
-        reachBoardLimit = true;
-      } else {
-        char *result = getBishopErrorMessage(piece, scanningX, scanningY);
-        if (result == NULL) {
-          n++;
-        } else {
-          errorMessage = result;
-          return;
-        }
-      }
+        if (y < 0 && isSimetrical)
+            return upLeft;
     }
-    startPieceAnimation(direction);
-  }
-
-  printf("direction: %d\n", direction);
+    return nope;
 }
 
-void moveKnight(Piece piece) {
-  Piece pieceOnTarget = *getPieceFromBoard(piece.target);
-  if (abs(selected->target.x - selected->pos.x) == 1 &&
-      abs(selected->target.y - selected->pos.y) == 2 &&
-      pieceOnTarget.color != piece.color) {
-    // startPieceAnimation();
-    return;
-  }
-
-  if (abs(selected->target.x - selected->pos.x) == 2 &&
-      abs(selected->target.y - selected->pos.y) == 1 &&
-      pieceOnTarget.color != piece.color) {
-    // startPieceAnimation();
-    return;
-  }
-  errorMessage = "Invalid movement";
-}
-
-void movePiece() {
-  printf("target.x: %f\ntarget.y: %f\n", selected->target.x,
-         selected->target.y);
-
-  if (selected->target.x >= 0) {
-    switch (selected->type) {
-    case pawn:
-      movePawn(selected);
-      break;
-
-    case empty:
+bool isDirectionAllowed(Piece *piece, Direction dir) {
+    if (dir == nope) {
+        return false;
+    }
+    switch (piece->type) {
     case rook:
-      break;
+        return dir == right || dir == left || dir == up || dir == down;
     case knight:
-      moveKnight(*selected);
-      break;
+        return false;
     case bishop:
-      moveBishop(*selected);
-      break;
+        return dir == upRight || dir == upLeft || dir == downLeft || dir == downRight;
     case queen:
+        return dir == upRight || dir == upLeft || dir == downLeft || dir == downRight || dir == right || dir == left ||
+               dir == up || dir == down;
     case king:
-      break;
+        return dir == upRight || dir == upLeft || dir == downLeft || dir == downRight || dir == right || dir == left ||
+               dir == up || dir == down;
+    case pawn:
+        if (piece->color == white) {
+            return dir == up || dir == upRight || dir == upLeft;
+        } else {
+            return dir == down || dir == downRight || dir == downLeft;
+        }
+        break;
     }
-  }
 }
 
-void drawPiece(Piece *piece) {
-  DrawTexturePro(
-      piece->texture,
-      (Rectangle){
-          0, 0, (float)piece->texture.width,
-          (float)piece->texture.height}, // source rectangle (full image)
-      (Rectangle){
-          piece->pos.x, // X position on screen
-          piece->pos.y, // Y position on screen
-          FIELD_SIZE,   // width to draw (scaled)
-          FIELD_SIZE    // height to draw (scaled)
-      },
-      (Vector2){0, 0}, // origin offset (not needed here)
-      0.0f,            // rotation
-      WHITE            // tint (WHITE = no tint)
-  );
+bool isPieceRulesRespected(Piece *piece, Direction dir, Vector2 target) {
+    IVector2 iTarget = convert(target);
+    IVector2 iPos = convert(piece->pos);
+    int deltaX = iTarget.x - iPos.x;
+    int deltaY = iTarget.y - iPos.y;
+    Piece *pieceOnTarget = getPieceFromPosition(target);
+
+    switch (piece->type) {
+    case rook:
+    case knight:
+
+    case bishop:
+        if (dir == downRight) {
+            for (float y = piece->pos.y + FIELD_SIZE; y < target.y + FIELD_SIZE; y += FIELD_SIZE) {
+                Vector2 nextPosition = (Vector2){piece->pos.x + y, y};
+                Piece *pieceOnPath = getPieceFromPosition(nextPosition);
+                if (pieceOnPath != NULL) {
+                    errorMessage = "Piece on the way";
+                    return false;
+                }
+            }
+            return true;
+        }
+        break;
+    case queen:
+        return true;
+    case king:
+    case pawn:
+        if ((dir == up || dir == down) && abs(deltaY) == 1 && pieceOnTarget == NULL) {
+            return true;
+        } else if ((dir == upLeft || dir == upRight || dir == downLeft || dir == downRight) && pieceOnTarget != NULL &&
+                   pieceOnTarget->color != piece->color && abs(deltaY) == 1) {
+            return true;
+        }
+        break;
+    }
+    return false;
 }
 
-void drawMovingPiece() {
-  if (selected != NULL && selected->isMoving) {
-    drawPiece(selected);
-    printf(ANSI_YELLOW "pos.y %f, target.y %f\n", selected->pos.y / FIELD_SIZE,
-           selected->target.y);
-    if (selected->pos.y / FIELD_SIZE == selected->target.y &&
-        selected->pos.x / FIELD_SIZE == selected->target.x) {
-      selected->isMoving = false;
-
-      // Update the selected piece in the BOARD
-      BOARD[(int)(selected->pos.x / FIELD_SIZE)]
-           [(int)(selected->pos.y / FIELD_SIZE)] = *selected;
-
-      // Remove the piece from original BOARD place
-      BOARD[(int)(selected->originalPos.x / FIELD_SIZE)]
-           [(int)(selected->originalPos.y / FIELD_SIZE)] = emptyPiece;
-
-    } else {
-      switch (selected->direction) {
-      case downRight:
-        selected->pos.x += 10;
-        selected->pos.y += 10;
-        break;
-      case downLeft:
-        selected->pos.x -= 10;
-        selected->pos.y += 10;
-        break;
-      case upRight:
-        selected->pos.x += 10;
-        selected->pos.y -= 10;
-        break;
-      case upLeft:
-        selected->pos.x -= 10;
-        selected->pos.y -= 10;
-        break;
-      case up:
-        selected->pos.y -= 10;
-        break;
-      case down:
-        selected->pos.y += 10;
-        break;
-      case left:
-        selected->pos.x -= 10;
-        break;
-      case right:
-        selected->pos.x += 10;
-        break;
-      }
-    }
-  }
+void onLeftClick(Vector2 pos) {
+    Piece *piece = getPieceFromPosition(pos);
+    selectedPiece = piece;
 }
 
-Color getFieldColor(int x, int y) {
-  Color color;
-  if (y % 2 == 0) {
-    if (x % 2 == 0) {
-      color = DARKGRAY;
-    } else {
-      color = WHITE;
-    }
-  } else {
+void onRightClick(Vector2 target) {
+    if (selectedPiece != NULL) {
 
-    if (x % 2 == 0) {
-      color = WHITE;
-    } else {
-      color = DARKGRAY;
+        Direction direction = getDirection(selectedPiece->pos, target);
+        if (isDirectionAllowed(selectedPiece, direction)) {
+            if (isPieceRulesRespected(selectedPiece, direction, target)) {
+                selectedPiece->target = target;
+                selectedPiece->isMoving = true;
+                selectedPiece->direction = direction;
+            }
+        } else {
+            errorMessage = direction == nope ? "nope" : "Invalid direction";
+        }
     }
-  }
-
-  if (selected != NULL && y == (int)selected->pos.y / FIELD_SIZE &&
-      x == (int)selected->pos.x / FIELD_SIZE) {
-    color = GREEN;
-  }
-  return color;
 }
 
 int main() {
-  InitWindow(FIELD_SIZE * 8, (FIELD_SIZE * 8) + 40, "Chess");
+    InitWindow(FIELD_SIZE * 8, (FIELD_SIZE * 8) + 40, "Chess");
 
-  fillEmptyBoard();
-  SetTargetFPS(60);
+    fillEmptyBoard();
+    SetTargetFPS(60);
+    while (!WindowShouldClose()) {
 
-  while (!WindowShouldClose()) {
-    if (IsMouseButtonDown(MOUSE_LEFT_BUTTON) && !isComputingClick) {
-      Vector2 mp = GetMousePosition();
-      Vector2 pos = {(int)mp.x / FIELD_SIZE, (int)mp.y / FIELD_SIZE};
-
-      selected = getPieceFromBoard(pos);
-    }
-
-    if (IsMouseButtonDown(MOUSE_RIGHT_BUTTON) && !isComputingClick) {
-      Vector2 mp = GetMousePosition();
-      Vector2 pos = {(int)mp.x / FIELD_SIZE, (int)mp.y / FIELD_SIZE};
-      selected->target = pos;
-      isComputingClick = true;
-      movePiece();
-    }
-
-    if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON) ||
-        IsMouseButtonReleased(MOUSE_RIGHT_BUTTON)) {
-      isComputingClick = false; // Reset once the user lets go
-    }
-
-    ClearBackground(BLUE);
-
-    if (errorMessage != NULL) {
-      DrawText(errorMessage, 20, (FIELD_SIZE * 8) + 10, 16, RED);
-    }
-
-    for (int x = 0; x < 8; x++) {
-      for (int y = 0; y < 8; y++) {
-        int position_x = x * FIELD_SIZE;
-        int position_y = y * FIELD_SIZE;
-        char houseNumber[50] = "";
-        sprintf(houseNumber, "x:%d y:%d", x, y);
-        // printf("Drawing %s\n", houseNumber);
-
-        DrawRectangle(position_x, position_y, FIELD_SIZE, FIELD_SIZE,
-                      getFieldColor(x, y));
-        Vector2 pos = {x, y};
-        Piece piece = *getPieceFromBoard(pos);
-
-        if (!piece.isMoving) {
-          drawPiece(&piece);
-          // printf(ANSI_BLUE "Drawing piece %d from BOARD[%d][%d]" ANSI_RESET,
-          //        piece.type, x, y);
+        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+            onLeftClick(GetMousePosition());
+        }
+        if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)) {
+            onRightClick(GetMousePosition());
+        }
+        BeginDrawing();
+        ClearBackground(BLUE);
+        DrawBoard();
+        for (int i = 0; i < 32; i++) {
+            Piece *piece = piecesList[i];
+            DrawPiece(piece);
         }
 
-        DrawText(houseNumber, position_x, position_y, 16, BLUE);
-        // printf(ANSI_GREEN "%s Drawn", houseNumber);
-      }
+        DrawText(errorMessage, 20, FIELD_SIZE * 8 + 10, 20, RED);
+        EndDrawing();
     }
-
-    drawMovingPiece();
-
-    EndDrawing();
-  }
-  CloseWindow();
-  return 0;
+    CloseWindow();
+    return 0;
 }
