@@ -11,6 +11,8 @@
 #define DEBUG(fmt, ...)                                                                                                \
     fprintf(stderr, ANSI_GREEN "[DEBUG] %s:%d: " fmt ANSI_RESET "\n", __func__, __LINE__, ##__VA_ARGS__)
 
+#define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0][0]))
+
 //----------------------------------------------------------------------------------
 // Structs
 //----------------------------------------------------------------------------------
@@ -46,7 +48,13 @@ typedef struct {
     float width;
     float height;
     Color color;
+    Color originalColor;
 } Field;
+
+typedef enum {
+    initializing,
+    playing,
+} GameState;
 
 //----------------------------------------------------------------------------------
 // Some globals
@@ -55,7 +63,10 @@ int boardWidth = 8;
 int boardHeight = 8;
 int FIELD_SIZE = 80;
 Field *board[8][8];
+Field *possibilities[64];
 Texture2D piece_textures[PIECE_COUNT];
+GameState gameState;
+Field *selectedField;
 
 //----------------------------------------------------------------------------------
 // Helper functions
@@ -75,7 +86,7 @@ void initBoard() {
     piece_textures[BB] = LoadTexture("assets/b-bishop.png");
     piece_textures[BR] = LoadTexture("assets/b-rook.png");
     piece_textures[BQ] = LoadTexture("assets/b-queen.png");
-    piece_textures[BK] = LoadTexture("assets/b-kinght.png");
+    piece_textures[BK] = LoadTexture("assets/b-king.png");
 
     PieceType x_board[8][8] = {{BR, BN, BB, BQ, BK, BB, BN, BR},
                                {BP, BP, BP, BP, BP, BP, BP, BP},
@@ -91,8 +102,8 @@ void initBoard() {
     for (int x = 0; x < 8; x++) {
         for (int y = 0; y < 8; y++) {
             Vector2 *pos = malloc(sizeof(Vector2));
-            pos->x = x * FIELD_SIZE;
-            pos->y = y * FIELD_SIZE;
+            pos->x = y * FIELD_SIZE;
+            pos->y = x * FIELD_SIZE;
 
             Piece *piece = malloc(sizeof(Piece));
             Vector2 *piecePos = malloc(sizeof(Vector2));
@@ -106,6 +117,7 @@ void initBoard() {
             field->pos = *pos;
             field->width = 0;
             field->height = 0;
+            field->originalColor = (x + y) % 2 == 0 ? WHITE : DARKGRAY;
             field->color = (x + y) % 2 == 0 ? WHITE : DARKGRAY;
             field->piece = piece;
 
@@ -114,25 +126,68 @@ void initBoard() {
     }
 }
 void Update(float timer, float fieldDelay) {
-
-    for (int x = 0; x < 8; x++) {
-        for (int y = 0; y < 8; y++) {
-            if (timer / fieldDelay < (x + y))
-                continue;
-            Field *field = board[x][y];
-            if (field->width < FIELD_SIZE) {
-                field->width += 12 * timer;
-                field->height += 12 * timer;
+    if (gameState == initializing) {
+        for (int x = 0; x < 8; x++) {
+            for (int y = 0; y < 8; y++) {
+                if (timer / fieldDelay < (x + y))
+                    continue;
+                Field *field = board[x][y];
+                if (field->width < FIELD_SIZE) {
+                    field->width += 12 * timer;
+                    field->height += 12 * timer;
+                } else if ((x + 1) * (y + 1) == ARRAY_SIZE(board)) {
+                    gameState = playing;
+                }
+                DEBUG("Field size %f %f", field->width, field->height);
             }
-            DEBUG("Field size %f %f", field->width, field->height);
+        }
+    } else if (gameState == playing) {
+        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+            Vector2 mp = GetMousePosition();
+            int y = (int)mp.y / FIELD_SIZE;
+            int x = (int)mp.x / FIELD_SIZE;
+            if (selectedField != NULL) {
+                selectedField->color = selectedField->originalColor;
+            }
+            Field *field = board[y][x];
+            field->color = GREEN;
+            selectedField = field;
+
+            // Restore original color from the last possibilities
+            for (int i = 0; i < 64; i++) {
+                Field *possibility = possibilities[i];
+                if (possibility != NULL) {
+                    possibility->color = possibility->originalColor;
+                }
+                possibilities[i] = NULL;
+            }
+
+            // Find possibilities
+            for (int i = 1; i < 7; i++) {
+                // down right
+                if (y + i < 8 && x + i < 8)
+                    possibilities[(y + i) * (x + i)] = board[y + i][x + i];
+
+                // down left
+                if (y + i < 8 && x - i >= 0)
+                    possibilities[(y + i) * (x - i)] = board[y + i][x - i];
+            }
+
+            // Painting the  possibilities yellow
+            for (int i = 0; i < 64; i++) {
+                Field *possibility = possibilities[i];
+                if (possibility != NULL) {
+                    possibility->color = YELLOW;
+                }
+            }
         }
     }
 }
 
 void Draw(float timer, float fieldDelay) {
 
-    for (int y = 0; y < 8; y++) {
-        for (int x = 0; x < 8; x++) {
+    for (int x = 0; x < 8; x++) {
+        for (int y = 0; y < 8; y++) {
             Field *field = board[x][y];
 
             char houseNumber[50] = "";
@@ -165,6 +220,7 @@ int main() {
     float timer = 0.0f;
     float fieldDelay = 0.10f;
 
+    gameState = initializing;
     InitWindow(FIELD_SIZE * boardWidth, boardHeight * FIELD_SIZE, "Chess");
     SetTargetFPS(30);
     initBoard();
