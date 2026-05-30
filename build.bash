@@ -1,1 +1,0 @@
-gcc chess.c -o chess -lraylib -lGL -lm -lpthread -ldl -lrt -lX11

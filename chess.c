@@ -61,6 +61,8 @@ bool isComputingClick = false;
 char *errorMessage;
 char *helpMessage;
 
+IVector2 possibilities[64];
+
 Piece w_rook1 = {.color = white, .type = rook, .asset = "assets/w-rook.png", .pos = (Vector2){0, 7}};
 Piece w_knight1 = {.color = white, .type = knight, .asset = "assets/w-knight.png", .pos = (Vector2){1, 7}};
 Piece w_bishop1 = {.color = white, .type = bishop, .asset = "assets/w-bishop.png", .pos = (Vector2){2, 7}};
@@ -98,8 +100,37 @@ Piece b_pawn7 = {.color = black, .type = pawn, .asset = "assets/b-pawn.png", .po
 Piece b_pawn8 = {.color = black, .type = pawn, .asset = "assets/b-pawn.png", .pos = (Vector2){7, 1}};
 
 Piece *piecesList[32];
+char computedString[50];
 
 IVector2 convert(Vector2 vector) { return (IVector2){(int)(vector.x / FIELD_SIZE), (int)(vector.y / FIELD_SIZE)}; }
+char *getPieceString(Piece *piece) {
+    char *color = piece->color == white ? "white" : "black";
+    char *name;
+    switch (piece->type) {
+
+    case rook:
+        name = "rook";
+        break;
+    case knight:
+        name = "knight";
+        break;
+    case bishop:
+        name = "bishop";
+        break;
+    case queen:
+        name = "queen";
+        break;
+    case king:
+        name = "king";
+        break;
+    case pawn:
+        name = "pawn";
+        break;
+    }
+    IVector2 iPos = convert(piece->pos);
+    sprintf(computedString, "%s %s on %d %d", color, name, iPos.x, iPos.y);
+    return computedString;
+}
 
 Piece *getPieceFromPosition(Vector2 pos) {
     for (int i = 0; i < 32; i++) {
@@ -168,7 +199,18 @@ void DrawBoard() {
             char houseNumber[50] = "";
             sprintf(houseNumber, "x:%d y:%d", x, y);
 
-            DrawRectangle(position_x, position_y, FIELD_SIZE, FIELD_SIZE, (x + y) % 2 == 0 ? WHITE : DARKGRAY);
+            bool isSelectedField = false;
+            if (selectedPiece != NULL) {
+                IVector2 iPos = convert(selectedPiece->pos);
+                isSelectedField = iPos.x == x && iPos.y == y;
+            }
+            DrawRectangle(position_x,
+                          position_y,
+                          FIELD_SIZE,
+                          FIELD_SIZE,
+                          isSelectedField    ? GREEN
+                          : (x + y) % 2 == 0 ? WHITE
+                                             : DARKGRAY);
 
             DrawText(houseNumber, position_x, position_y, 16, BLUE);
         }
@@ -239,11 +281,6 @@ void DrawPiece(Piece *piece) {
                    (Vector2){1, 1},
                    0,
                    WHITE);
-    // IVector2 oi = convert(piece->pos);
-    // char houseNumber[50] = "";
-    // sprintf(houseNumber, "x:%d y:%d", oi.x, oi.y);
-    // DrawText(houseNumber, piece->pos.x, piece->pos.y + 40, 20, RED);
-    computePieceAnimation(piece);
 }
 
 Direction getDirection(Vector2 pos, Vector2 target) {
@@ -309,90 +346,70 @@ bool isDirectionAllowed(Piece *piece, Direction dir) {
     }
 }
 
-bool isPieceRulesRespected(Piece *piece, Direction dir, Vector2 target) {
-    IVector2 iTarget = convert(target);
+void calculatePossibilities(Piece *piece) {
     IVector2 iPos = convert(piece->pos);
-    int deltaX = iTarget.x - iPos.x;
-    int deltaY = iTarget.y - iPos.y;
-    Piece *pieceOnTarget = getPieceFromPosition(target);
-
     switch (piece->type) {
     case rook:
     case knight:
-
     case bishop:
-        if (dir == downRight) {
-            for (float y = piece->pos.y + FIELD_SIZE; y < target.y + FIELD_SIZE; y += FIELD_SIZE) {
-                Vector2 nextPosition = (Vector2){piece->pos.x + y, y};
-                Piece *pieceOnPath = getPieceFromPosition(nextPosition);
-                if (pieceOnPath != NULL) {
-                    errorMessage = "Piece on the way";
-                    return false;
-                }
-            }
-            return true;
+        for (int y = iPos.y + 1; y < 7; y++) {
         }
         break;
+
     case queen:
-        return true;
     case king:
     case pawn:
-        if ((dir == up || dir == down) && abs(deltaY) == 1 && pieceOnTarget == NULL) {
-            return true;
-        } else if ((dir == upLeft || dir == upRight || dir == downLeft || dir == downRight) && pieceOnTarget != NULL &&
-                   pieceOnTarget->color != piece->color && abs(deltaY) == 1) {
-            return true;
-        }
         break;
     }
-    return false;
 }
 
-void onLeftClick(Vector2 pos) {
-    Piece *piece = getPieceFromPosition(pos);
-    selectedPiece = piece;
-}
+void onLeftClick(Vector2 pos) { selectedPiece = getPieceFromPosition(pos); }
 
 void onRightClick(Vector2 target) {
     if (selectedPiece != NULL) {
+        selectedPiece->target = target;
+    }
+}
 
-        Direction direction = getDirection(selectedPiece->pos, target);
-        if (isDirectionAllowed(selectedPiece, direction)) {
-            if (isPieceRulesRespected(selectedPiece, direction, target)) {
-                selectedPiece->target = target;
-                selectedPiece->isMoving = true;
-                selectedPiece->direction = direction;
-            }
-        } else {
-            errorMessage = direction == nope ? "nope" : "Invalid direction";
-        }
+void Draw() {
+    DrawBoard();
+    for (int i = 0; i < 32; i++) {
+        Piece *piece = piecesList[i];
+        DrawPiece(piece);
+    }
+    DrawText(errorMessage, 20, FIELD_SIZE * 8 + 10, 20, RED);
+}
+
+void Update() {
+    if (selectedPiece != NULL) {
+        calculatePossibilities(selectedPiece);
     }
 }
 
 int main() {
     InitWindow(FIELD_SIZE * 8, (FIELD_SIZE * 8) + 40, "Chess");
+    int currentMonitor = GetCurrentMonitor();
+    int monitorWidth = GetMonitorWidth(currentMonitor);
 
+    int monitorHeight = GetMonitorHeight(currentMonitor);
+    SetWindowPosition(monitorWidth - 80 - FIELD_SIZE * 8, 80);
     fillEmptyBoard();
     SetTargetFPS(60);
     while (!WindowShouldClose()) {
-
+        Update();
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
             onLeftClick(GetMousePosition());
         }
         if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)) {
             onRightClick(GetMousePosition());
         }
+
         BeginDrawing();
         ClearBackground(BLUE);
-        DrawBoard();
-        for (int i = 0; i < 32; i++) {
-            Piece *piece = piecesList[i];
-            DrawPiece(piece);
-        }
-
-        DrawText(errorMessage, 20, FIELD_SIZE * 8 + 10, 20, RED);
+        Draw();
         EndDrawing();
     }
+
     CloseWindow();
     return 0;
 }
