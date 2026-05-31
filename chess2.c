@@ -99,43 +99,105 @@ void initBoard() {
                                {WP, WP, WP, WP, WP, WP, WP, WP},
                                {WR, WN, WB, WQ, WK, WB, WN, WR}};
 
-    for (int x = 0; x < 8; x++) {
-        for (int y = 0; y < 8; y++) {
+    for (int row = 0; row < 8; row++) {
+        for (int column = 0; column < 8; column++) {
             Vector2 *pos = malloc(sizeof(Vector2));
-            pos->x = y * FIELD_SIZE;
-            pos->y = x * FIELD_SIZE;
+            pos->x = column * FIELD_SIZE;
+            pos->y = row * FIELD_SIZE;
 
             Piece *piece = malloc(sizeof(Piece));
             Vector2 *piecePos = malloc(sizeof(Vector2));
             *piecePos = *pos;
 
-            piece->texture = piece_textures[x_board[x][y]];
-            piece->type = x_board[x][y];
+            piece->texture = piece_textures[x_board[row][column]];
+            piece->type = x_board[row][column];
             piece->pos = *piecePos;
 
             Field *field = malloc(sizeof(Field));
             field->pos = *pos;
             field->width = 0;
             field->height = 0;
-            field->originalColor = (x + y) % 2 == 0 ? WHITE : DARKGRAY;
-            field->color = (x + y) % 2 == 0 ? WHITE : DARKGRAY;
+            field->originalColor = (row + column) % 2 == 0 ? WHITE : DARKGRAY;
+            field->color = (row + column) % 2 == 0 ? WHITE : DARKGRAY;
             field->piece = piece;
 
-            board[x][y] = field;
+            board[row][column] = field;
         }
     }
 }
+
+void registerPossibilitie(int row, int column) { possibilities[column + row * 8] = board[row][column]; }
+
+void rookPossibilities(int i, int row, int column) {
+    // up
+    int scanRow = row - i;
+    if (scanRow >= 0) {
+        registerPossibilitie(scanRow, column);
+    }
+
+    // down
+    scanRow = row + i;
+    if (scanRow < 8) {
+        registerPossibilitie(scanRow, column);
+    }
+
+    // right
+    int scanColumn = column + i;
+    if (scanColumn < 8) {
+        registerPossibilitie(row, scanColumn);
+    }
+
+    // left
+    scanColumn = column - i;
+    if (scanColumn >= 0) {
+        registerPossibilitie(row, scanColumn);
+    }
+}
+
+void bishopPossibilities(int i, int row, int column) {
+    // down right
+    int scanRow = row + i;
+    int scanColumn = column + i;
+    if (scanRow < 8 && scanColumn < 8) {
+        possibilities[(scanColumn) + (scanRow * 8)] = board[scanRow][scanColumn];
+        registerPossibilitie(scanRow, scanColumn);
+    }
+
+    // down left
+    scanRow = row + i;
+    scanColumn = column - i;
+    if (scanRow < 8 && scanColumn >= 0) {
+        registerPossibilitie(scanRow, scanColumn);
+    }
+
+    // up right
+    scanRow = row - i;
+    scanColumn = column + i;
+    if (scanRow >= 0 && scanColumn < 8) {
+        registerPossibilitie(scanRow, scanColumn);
+    }
+
+    // up left
+    scanRow = row - i;
+    scanColumn = column - i;
+    if (scanRow >= 0 && scanColumn >= 0) {
+        registerPossibilitie(scanRow, scanColumn);
+    }
+}
+
+void pawnPossibilities(int i, int row, int column) {}
+
 void Update(float timer, float fieldDelay) {
     if (gameState == initializing) {
-        for (int x = 0; x < 8; x++) {
-            for (int y = 0; y < 8; y++) {
-                if (timer / fieldDelay < (x + y))
+        for (int row = 0; row < 8; row++) {
+            for (int column = 0; column < 8; column++) {
+                if (timer / fieldDelay < (row + column))
                     continue;
-                Field *field = board[x][y];
+                Field *field = board[row][column];
                 if (field->width < FIELD_SIZE) {
                     field->width += 12 * timer;
                     field->height += 12 * timer;
-                } else if ((x + 1) * (y + 1) == ARRAY_SIZE(board)) {
+                } else if ((row + 1) * (column + 1) == ARRAY_SIZE(board)) {
                     gameState = playing;
                 }
                 DEBUG("Field size %f %f", field->width, field->height);
@@ -143,15 +205,15 @@ void Update(float timer, float fieldDelay) {
         }
     } else if (gameState == playing) {
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+            DEBUG("LEFT CLICK");
             Vector2 mp = GetMousePosition();
-            int y = (int)mp.y / FIELD_SIZE;
-            int x = (int)mp.x / FIELD_SIZE;
+            int row = (int)mp.y / FIELD_SIZE;
+            int column = (int)mp.x / FIELD_SIZE;
+            DEBUG("Selected row:%d colum:%d", row, column);
+
             if (selectedField != NULL) {
                 selectedField->color = selectedField->originalColor;
             }
-            Field *field = board[y][x];
-            field->color = GREEN;
-            selectedField = field;
 
             // Restore original color from the last possibilities
             for (int i = 0; i < 64; i++) {
@@ -162,15 +224,38 @@ void Update(float timer, float fieldDelay) {
                 possibilities[i] = NULL;
             }
 
-            // Find possibilities
-            for (int i = 1; i < 7; i++) {
-                // down right
-                if (y + i < 8 && x + i < 8)
-                    possibilities[(y + i) * (x + i)] = board[y + i][x + i];
+            Field *field = board[row][column];
+            field->color = GREEN;
+            selectedField = field;
 
-                // down left
-                if (y + i < 8 && x - i >= 0)
-                    possibilities[(y + i) * (x - i)] = board[y + i][x - i];
+            // Find possibilities
+            for (int i = 1; i < 8; i++) {
+
+                switch (selectedField->piece->type) {
+                case WB:
+                case BB:
+                    bishopPossibilities(i, row, column);
+                    break;
+                case WR:
+                case BR:
+                    rookPossibilities(i, row, column);
+                    break;
+                case WQ:
+                case BQ:
+                    bishopPossibilities(i, row, column);
+                    rookPossibilities(i, row, column);
+                    break;
+                case WP:
+                    pawnPossibilities(i, row, column);
+                case WN:
+                case WK:
+                case BP:
+                case BN:
+                case BK:
+                case EMPTY:
+                case PIECE_COUNT:
+                    break;
+                }
             }
 
             // Painting the  possibilities yellow
@@ -180,18 +265,19 @@ void Update(float timer, float fieldDelay) {
                     possibility->color = YELLOW;
                 }
             }
+            DEBUG("FINISH PAINTING");
         }
     }
 }
 
 void Draw(float timer, float fieldDelay) {
 
-    for (int x = 0; x < 8; x++) {
-        for (int y = 0; y < 8; y++) {
-            Field *field = board[x][y];
+    for (int row = 0; row < 8; row++) {
+        for (int column = 0; column < 8; column++) {
+            Field *field = board[row][column];
 
             char houseNumber[50] = "";
-            sprintf(houseNumber, "x:%d y:%d", x, y);
+            sprintf(houseNumber, "r:%d c:%d", row, column);
 
             DrawRectangle(field->pos.x, field->pos.y, field->width, field->height, field->color);
 
@@ -222,10 +308,17 @@ int main() {
 
     gameState = initializing;
     InitWindow(FIELD_SIZE * boardWidth, boardHeight * FIELD_SIZE, "Chess");
+    int currentMonitor = GetCurrentMonitor();
+    int monitorWidth = GetMonitorWidth(currentMonitor);
+
+    int monitorHeight = GetMonitorHeight(currentMonitor);
+    SetWindowPosition(monitorWidth - 80 - FIELD_SIZE * 8, 80);
+
     SetTargetFPS(30);
     initBoard();
     while (!WindowShouldClose()) {
         timer += GetFrameTime();
+        // DEBUG("DRAWING %f", timer);
         // printf("Frame time %f\n", timer);
         Update(timer, fieldDelay);
         BeginDrawing();
