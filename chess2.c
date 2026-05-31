@@ -154,6 +154,133 @@ void rookPossibilities(int i, int row, int column) {
     }
 }
 
+void knightPossibilities(int i, int row, int column, Piece *pice) {
+    // DOWN
+    int scanRow = row + 1;
+    if (scanRow < 8) {
+        registerPossibilitie(scanRow, column);
+        // right
+        int scanColumn = column + 1;
+        if (scanColumn < 8) {
+            registerPossibilitie(scanRow, scanColumn);
+        }
+        // left
+        scanColumn = column - 1;
+        if (scanColumn >= 0) {
+            registerPossibilitie(scanRow, scanColumn);
+        }
+    }
+
+    // UP
+    scanRow = row - 1;
+    if (scanRow >= 0) {
+        registerPossibilitie(scanRow, column);
+        // right
+        int scanColumn = column - 1;
+        if (scanColumn >= 0) {
+            registerPossibilitie(scanRow, scanColumn);
+        }
+        // left
+        scanColumn = column + 1;
+        if (scanColumn < 8) {
+            registerPossibilitie(scanRow, scanColumn);
+        }
+    }
+    // RIGHT
+    int scanColumn = column + 1;
+    if (scanColumn < 8) {
+        registerPossibilitie(row, scanColumn);
+        // down
+        scanRow = row + 1;
+        if (scanRow < 8) {
+            registerPossibilitie(scanRow, scanColumn);
+        }
+        // up
+        scanRow = row - 1;
+        if (scanRow >= 0) {
+            registerPossibilitie(scanRow, scanColumn);
+        }
+    }
+
+    // LEFT
+    scanColumn = column - 1;
+    if (scanColumn >= 0) {
+        registerPossibilitie(row, scanColumn);
+        // down
+        scanRow = row + 1;
+        if (scanRow < 8) {
+            registerPossibilitie(scanRow, scanColumn);
+        }
+        // up
+        scanRow = row - 1;
+        if (scanRow >= 0) {
+            registerPossibilitie(scanRow, scanColumn);
+        }
+    }
+}
+
+void kingPossibilities(int i, int row, int column, Piece *piece) {
+
+    // DOWN
+    int scanRow = row + 1;
+    if (scanRow < 8) {
+        // right
+        int scanColumn = column + 1;
+        if (scanColumn < 8) {
+            registerPossibilitie(scanRow, scanColumn);
+        }
+        // left
+        scanColumn = column - 1;
+        if (scanColumn >= 0) {
+            registerPossibilitie(scanRow, scanColumn);
+        }
+    }
+
+    // UP
+    scanRow = row - 1;
+    if (scanRow >= 0) {
+        // right
+        int scanColumn = column - 1;
+        if (scanColumn >= 0) {
+            registerPossibilitie(scanRow, scanColumn);
+        }
+        // left
+        scanColumn = column + 1;
+        if (scanColumn < 8) {
+            registerPossibilitie(scanRow, scanColumn);
+        }
+    }
+    // RIGHT
+    int scanColumn = column + 1;
+    if (scanColumn < 8) {
+        // down
+        scanRow = row + 1;
+        if (scanRow < 8) {
+            registerPossibilitie(scanRow, scanColumn);
+        }
+        // up
+        scanRow = row - 1;
+        if (scanRow >= 0) {
+            registerPossibilitie(scanRow, scanColumn);
+        }
+    }
+
+    // LEFT
+    scanColumn = column - 1;
+    if (scanColumn >= 0) {
+        // down
+        scanRow = row + 1;
+        if (scanRow < 8) {
+            registerPossibilitie(scanRow, scanColumn);
+        }
+        // up
+        scanRow = row - 1;
+        if (scanRow >= 0) {
+            registerPossibilitie(scanRow, scanColumn);
+        }
+    }
+}
+
 void bishopPossibilities(int i, int row, int column) {
     // down right
     int scanRow = row + i;
@@ -185,7 +312,19 @@ void bishopPossibilities(int i, int row, int column) {
     }
 }
 
-void pawnPossibilities(int i, int row, int column) {}
+void pawnPossibilities(int i, int row, int column, Piece *piece) {
+    if (piece->type == WP) {
+        int scanRow = row - 1;
+        if (scanRow >= 0) {
+            registerPossibilitie(scanRow, column);
+        }
+    } else {
+        int scanRow = row + 1;
+        if (scanRow < 8) {
+            registerPossibilitie(scanRow, column);
+        }
+    }
+}
 
 void Update(float timer, float fieldDelay) {
     if (gameState == initializing) {
@@ -246,12 +385,16 @@ void Update(float timer, float fieldDelay) {
                     rookPossibilities(i, row, column);
                     break;
                 case WP:
-                    pawnPossibilities(i, row, column);
-                case WN:
-                case WK:
                 case BP:
+                    pawnPossibilities(i, row, column, selectedField->piece);
+                    break;
+                case WN:
                 case BN:
+                    knightPossibilities(i, row, column, selectedField->piece);
+                    break;
+                case WK:
                 case BK:
+                    kingPossibilities(i, row, column, selectedField->piece);
                 case EMPTY:
                 case PIECE_COUNT:
                     break;
